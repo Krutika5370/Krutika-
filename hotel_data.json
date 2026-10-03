@@ -1,0 +1,13 @@
+{
+  "rooms": [
+    {"id":101, "name":"Standard Cozy", "category":"Standard", "price":100.0, "available":false},
+    {"id":102, "name":"Standard Twin", "category":"Standard", "price":120.0, "available":true},
+    {"id":201, "name":"Deluxe Ocean View", "category":"Deluxe", "price":220.0, "available":true},
+    {"id":202, "name":"Deluxe City View", "category":"Deluxe", "price":200.0, "available":true},
+    {"id":301, "name":"Presidential Suite", "category":"Suite", "price":450.0, "available":true},
+    {"id":302, "name":"Royal Penthouse Suite", "category":"Suite", "price":600.0, "available":true}
+  ],
+  "bookings": [
+    {"id":"BK-1790697194776", "roomId":101, "roomName":"Standard Cozy", "category":"Standard", "guestName":"ghjh", "email":"kkkkkkk@gmail.com", "checkIn":"2026-09-30", "checkOut":"2026-10-09", "totalPrice":100.0, "paymentStatus":"Paid (Simulated)"}
+  ]
+}

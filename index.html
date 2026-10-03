@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grand Luxe Hotel Reservation System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans">
+
+    <!-- Header -->
+    <header class="bg-indigo-900 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
+            <h1 class="text-2xl font-bold tracking-wide">🏨 Grand Luxe Hotel</h1>
+            <nav class="space-x-4">
+                <button onclick="switchTab('rooms')" id="btn-rooms" class="px-4 py-2 bg-indigo-700 rounded font-medium transition">Rooms & Book</button>
+                <button onclick="switchTab('bookings')" id="btn-bookings" class="px-4 py-2 hover:bg-indigo-800 rounded font-medium transition">My Bookings</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        
+        <!-- ROOMS SECTION -->
+        <section id="section-rooms">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                <h2 class="text-xl font-semibold">Available Rooms & Categories</h2>
+                <div class="flex gap-2">
+                    <button onclick="filterRooms('All')" class="px-3 py-1 bg-indigo-600 text-white text-sm rounded">All</button>
+                    <button onclick="filterRooms('Standard')" class="px-3 py-1 bg-white border text-sm rounded">Standard</button>
+                    <button onclick="filterRooms('Deluxe')" class="px-3 py-1 bg-white border text-sm rounded">Deluxe</button>
+                    <button onclick="filterRooms('Suite')" class="px-3 py-1 bg-white border text-sm rounded">Suite</button>
+                </div>
+            </div>
+            <div id="rooms-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <!-- BOOKINGS SECTION -->
+        <section id="section-bookings" class="hidden">
+            <h2 class="text-xl font-semibold mb-6">Reservation Management & Details</h2>
+            <div id="bookings-list" class="space-y-4"></div>
+        </section>
+
+    </main>
+
+    <!-- BOOKING & PAYMENT MODAL -->
+    <div id="booking-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
+            <h3 class="text-lg font-bold mb-4" id="modal-room-title">Book Room</h3>
+            <form id="booking-form" onsubmit="submitBooking(event)" class="space-y-4">
+                <input type="hidden" id="modal-room-id">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                    <input type="text" id="guestName" required class="mt-1 w-full border rounded p-2 focus:ring focus:ring-indigo-200">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email Address</label>
+                    <input type="email" id="email" required class="mt-1 w-full border rounded p-2 focus:ring focus:ring-indigo-200">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Check-In Date</label>
+                        <input type="date" id="checkIn" required class="mt-1 w-full border rounded p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Check-Out Date</label>
+                        <input type="date" id="checkOut" required class="mt-1 w-full border rounded p-2">
+                    </div>
+                </div>
+                <div class="bg-slate-100 p-3 rounded text-sm">
+                    <p class="font-semibold text-indigo-900">Payment Simulation</p>
+                    <p class="text-gray-600">Simulated Credit Card: **** **** **** 8888</p>
+                    <p class="font-bold mt-1">Total Charge: $<span id="modal-room-price">0</span></p>
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded text-gray-600 hover:bg-gray-100">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Confirm Payment & Book</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentCategory = 'All';
+
+        document.addEventListener('DOMContentLoaded', () => { loadRooms(); });
+
+        function switchTab(tab) {
+            if (tab === 'rooms') {
+                document.getElementById('section-rooms').classList.remove('hidden');
+                document.getElementById('section-bookings').classList.add('hidden');
+                document.getElementById('btn-rooms').className = "px-4 py-2 bg-indigo-700 rounded font-medium transition";
+                document.getElementById('btn-bookings').className = "px-4 py-2 hover:bg-indigo-800 rounded font-medium transition";
+                loadRooms(currentCategory);
+            } else {
+                document.getElementById('section-rooms').classList.add('hidden');
+                document.getElementById('section-bookings').classList.remove('hidden');
+                document.getElementById('btn-bookings').className = "px-4 py-2 bg-indigo-700 rounded font-medium transition";
+                document.getElementById('btn-rooms').className = "px-4 py-2 hover:bg-indigo-800 rounded font-medium transition";
+                loadBookings();
+            }
+        }
+
+        async function loadRooms(category = 'All') {
+            currentCategory = category;
+            try {
+                const res = await fetch(`/api/rooms?category=${category}`);
+                const rooms = await res.json();
+                const grid = document.getElementById('rooms-grid');
+                grid.innerHTML = '';
+                rooms.forEach(room => {
+                    grid.innerHTML += `
+                        <div class="bg-white border rounded-lg p-5 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <span class="text-xs uppercase font-bold px-2 py-1 bg-indigo-50 text-indigo-700 rounded">${room.category}</span>
+                                <h3 class="text-lg font-bold mt-2">${room.name}</h3>
+                                <p class="text-2xl font-extrabold text-indigo-900 mt-1">$${room.price} <span class="text-sm font-normal text-gray-500">/ night</span></p>
+                            </div>
+                            <div class="mt-6 flex items-center justify-between">
+                                <span class="text-sm font-medium ${room.available ? 'text-green-600' : 'text-red-500'}">
+                                    ${room.available ? '● Available' : '● Booked'}
+                                </span>
+                                ${room.available ? `<button onclick="openModal(${room.id}, '${room.name}',${room.price})" class="px-4 py-2 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700">Book Now</button>` : `<button disabled class="px-4 py-2 bg-gray-200 text-gray-400 text-sm rounded cursor-not-allowed">Unavailable</button>`}
+                            </div>
+                        </div>`;
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        function filterRooms(category) { loadRooms(category); }
+
+        function openModal(id, name, price) {
+            document.getElementById('modal-room-id').value = id;
+            document.getElementById('modal-room-title').innerText = `Book Room: ${name}`;
+            document.getElementById('modal-room-price').innerText = price;
+            document.getElementById('booking-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('booking-modal').classList.add('hidden');
+            document.getElementById('booking-form').reset();
+        }
+
+        async function submitBooking(e) {
+            e.preventDefault();
+            const bookingData = {
+                roomId: parseInt(document.getElementById('modal-room-id').value),
+                guestName: document.getElementById('guestName').value,
+                email: document.getElementById('email').value,
+                checkIn: document.getElementById('checkIn').value,
+                checkOut: document.getElementById('checkOut').value
+            };
+
+            const res = await fetch('/api/bookings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bookingData)
+            });
+
+            if (res.ok) {
+                alert('Payment simulated successfully & Room Booked!');
+                closeModal();
+                loadRooms(currentCategory);
+            } else {
+                alert('Failed to book room.');
+            }
+        }
+
+        async function loadBookings() {
+            try {
+                const res = await fetch('/api/bookings');
+                const bookings = await res.json();
+                const list = document.getElementById('bookings-list');
+                list.innerHTML = '';
+                if (bookings.length === 0) {
+                    list.innerHTML = `<p class="text-gray-500">No active bookings found.</p>`;
+                    return;
+                }
+                bookings.forEach(b => {
+                    list.innerHTML += `
+                        <div class="bg-white border rounded-lg p-5 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                                <span class="text-xs font-bold bg-green-100 text-green-800 px-2 py-1 rounded">ID: ${b.id}</span>
+                                <h3 class="text-lg font-bold mt-1">${b.roomName} <span class="text-sm font-normal text-gray-500">(${b.category})</span></h3>
+                                <p class="text-sm text-gray-600 mt-1">Guest: <b>${b.guestName}</b> (${b.email})</p>
+                                <p class="text-sm text-gray-500">Dates: ${b.checkIn} to ${b.checkOut} | Payment: <b>${b.paymentStatus} ($${b.totalPrice})</b></p>
+                            </div>
+                            <button onclick="cancelBooking('${b.id}')" class="px-4 py-2 bg-red-100 text-red-700 text-sm font-medium rounded hover:bg-red-200 transition">Cancel Reservation</button>
+                        </div>`;
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        async function cancelBooking(id) {
+            if (!confirm("Are you sure you want to cancel this reservation?")) return;
+            const res = await fetch(`/api/bookings/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                alert('Reservation cancelled.');
+                loadBookings();
+            } else {
+                alert('Cancellation failed.');
+            }
+        }
+    </script>
+</body>
+</html>
